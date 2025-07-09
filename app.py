@@ -1,9 +1,9 @@
+
 import streamlit as st
 import pandas as pd
-import os
 from io import BytesIO
 
-st.set_page_config(page_title="Futuristic Duplicate Checker", layout="centered")
+st.set_page_config(page_title="Exelsior Duplicate Checker", layout="centered")
 
 # 💫 Custom Futuristic Styling
 st.markdown("""
@@ -21,7 +21,7 @@ st.markdown("""
 
 st.title("🚀 Exelsior Duplicate Checker")
 
-st.write("Upload your main Excel or CSV file and one or more files (CSV or Excel) to compare duplicates by the 'Name' column.")
+st.write("Upload your main Excel or CSV file and one or more files (CSV or Excel) to check for duplicates based on the 'Name' column.")
 
 # Upload reference file (Excel or CSV)
 reference_file = st.file_uploader("📁 Upload the reference file (Excel or CSV):", type=["xlsx", "csv"])
@@ -30,11 +30,14 @@ reference_file = st.file_uploader("📁 Upload the reference file (Excel or CSV)
 comparison_files = st.file_uploader("📂 Upload one or more files to compare (Excel or CSV):", type=["xlsx", "csv"], accept_multiple_files=True)
 
 def load_file(file):
-    if file.name.endswith('.csv'):
-        return pd.read_csv(file)
-    elif file.name.endswith('.xlsx'):
-        return pd.read_excel(file)
-    return None
+    try:
+        if file.name.endswith('.csv'):
+            return pd.read_csv(file, on_bad_lines='skip', sep=';')  # Handles semicolon-separated CSVs
+        elif file.name.endswith('.xlsx'):
+            return pd.read_excel(file)
+    except Exception as e:
+        st.error(f"❌ Error loading file {file.name}: {e}")
+    return pd.DataFrame()  # Return empty if loading fails
 
 if reference_file and comparison_files:
     ref_df = load_file(reference_file)
@@ -58,10 +61,10 @@ if reference_file and comparison_files:
         if all_duplicates:
             final_result = pd.concat(all_duplicates, ignore_index=True)
 
-            st.subheader("🔍 Found Duplicates")
+            st.subheader("🔍 Duplicates Found")
             st.dataframe(final_result)
 
-            # Prepare download
+            # Prepare file for download
             output = BytesIO()
             final_result.to_excel(output, index=False, engine='openpyxl')
             output.seek(0)
@@ -75,4 +78,4 @@ if reference_file and comparison_files:
         else:
             st.info("✅ No duplicates found in the uploaded files.")
 else:
-    st.warning("Please upload both the reference file and at least one comparison file.")
+    st.warning("⚠️ Please upload both the reference file and at least one comparison file.")
